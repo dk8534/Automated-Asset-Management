@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Assets - Asset Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2><i class="bi bi-box me-2"></i>Assets</h2>
+  <div class="d-flex align-items-center">
+      {% if user.userprofile.role == 'admin' %} {# Only Admin can add assets #}
+      <a href="{% url 'asset_create' %}" class="btn btn-primary me-2">
+          <i class="bi bi-plus-circle me-2"></i>Add Asset
+      </a>
+      {% endif %}
+      
+      {% if show_export_button %} {# Show export button only if filters are applied and user is admin/incharge #}
+      <a href="{% url 'export_assets_excel' %}?search={{ search_query }}&status={{ status_filter }}&category={{ category_filter }}" class="btn btn-outline-success">
+          <i class="bi bi-download me-2"></i>Export List
+      </a>
+      {% endif %}
+  </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+  <div class="card-body">
+      <form method="get" class="row g-3">
+          <div class="col-md-4">
+              <input type="text" class="form-control" name="search" placeholder="Search assets..." value="{{ search_query|default:'' }}">
+          </div>
+          <div class="col-md-3">
+              <select name="status" class="form-select">
+                  <option value="">All Status</option>
+                  {% for value, label in status_choices %}
+                  <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+              </select>
+          </div>
+          <div class="col-md-3">
+              <select name="category" class="form-select">
+                  <option value="">All Categories</option>
+                  {% for value, label in category_choices %}
+                  <option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+              </select>
+          </div>
+          <div class="col-md-2">
+              <button type="submit" class="btn btn-outline-primary w-100">
+                  <i class="bi bi-search"></i> Filter
+              </button>
+          </div>
+      </form>
+  </div>
+</div>
+
+<!-- Assets Table -->
+<div class="card">
+  <div class="card-body">
+      {% if assets %}
+      <div class="table-responsive">
+          <table class="table table-hover">
+              <thead>
+                  <tr>
+                      <th>Serial Number</th>
+                      <th>Display Name</th>
+                      <th>Category</th>
+                      <th>Department</th>
+                      <th>Status</th>
+                      <th>Assigned To</th>
+                      <th>Actions</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for asset in assets %}
+                  <tr>
+                      <td>
+                          {% if asset.serial_number %}
+                              <a href="{% url 'asset_detail' asset.serial_number %}" class="text-decoration-none fw-bold">
+                                  {{ asset.serial_number }}
+                              </a>
+                          {% else %}
+                              <span class="text-danger">Invalid Serial</span>
+                          {% endif %}
+                      </td>
+                      <td>{{ asset.display_name }}</td>
+                      <td>
+                          <span class="badge bg-info">{{ asset.get_model_category_display }}</span>
+                      </td>
+                      <td>{{ asset.department }}</td>
+                      <td>
+                          {% if asset.status == 'available' %}
+                              <span class="badge bg-success">{{ asset.get_status_display }}</span>
+                          {% elif asset.status == 'assigned' %}
+                              <span class="badge bg-primary">{{ asset.get_status_display }}</span>
+                          {% elif asset.status == 'maintenance' %}
+                              <span class="badge bg-warning">{{ asset.get_status_display }}</span>
+                          {% else %}
+                              <span class="badge bg-secondary">{{ asset.get_status_display }}</span>
+                          {% endif %}
+                      </td>
+                      <td>
+                          {% if asset.assigned_user %}
+                              {{ asset.assigned_user.get_full_name|default:asset.assigned_user.username }}
+                          {% else %}
+                              <span class="text-muted">Unassigned</span>
+                          {% endif %}
+                      </td>
+                      <td>
+                          <div class="btn-group btn-group-sm">
+                              {% if asset.serial_number %} {# Defensive check for serial number #}
+                                  <a href="{% url 'asset_detail' asset.serial_number %}" class="btn btn-outline-primary">
+                                      <i class="bi bi-eye"></i>
+                                  </a>
+                                  {% if user.userprofile.role == 'admin' or user.userprofile.role == 'asset_incharge' %} {# Admin or Incharge can edit #}
+                                  <a href="{% url 'asset_edit' asset.serial_number %}" class="btn btn-outline-secondary">
+                                      <i class="bi bi-pencil"></i>
+                                  </a>
+                                  {% endif %}
+                                  {% if user.userprofile.role == 'admin' %} {# Only Admin can delete #}
+                                  <a href="{% url 'asset_delete' asset.serial_number %}" class="btn btn-outline-danger">
+                                      <i class="bi bi-trash"></i>
+                                  </a>
+                                  {% elif user.userprofile.role == 'asset_incharge' %} {# Only Asset Incharge can assign/return #}
+                                      {% if asset.status == 'available' or asset.status == 'maintenance' %}
+                                      <a href="{% url 'assign_asset' asset.serial_number %}" class="btn btn-success">
+                                          <i class="bi bi-person-plus"></i>
+                                      </a>
+                                      {% elif asset.status == 'assigned' %}
+                                      <a href="{% url 'return_asset' asset.serial_number %}" class="btn btn-warning">
+                                          <i class="bi bi-arrow-return-left"></i>
+                                      </a>
+                                      {% endif %}
+                                  {% endif %}
+                              {% else %}
+                                  <span class="text-muted">N/A</span> {# Display N/A if serial number is invalid #}
+                              {% endif %}
+                          </div>
+                      </td>
+                  </tr>
+                  {% endfor %}
+              </tbody>
+          </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5">
+          <i class="bi bi-inbox display-4 text-muted"></i>
+          <p class="text-muted mt-3">No assets found.</p>
+          {% if user.userprofile.role == 'admin' %}
+          <a href="{% url 'asset_create' %}" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-2"></i>Add First Asset
+          </a>
+          {% endif %}
+      </div>
+      {% endif %}
+  </div>
+</div>
+{% endblock %}

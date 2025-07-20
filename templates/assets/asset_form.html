@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Asset Management{% endblock %}
+
+{% block content %}
+{% if user.userprofile.role == 'admin' or user.userprofile.role == 'asset_incharge' %} {# Admin or Incharge can access this form #}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-box me-2"></i>{{ title }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.serial_number.id_for_label }}" class="form-label">Serial Number</label>
+                                {{ form.serial_number }}
+                                {% if form.serial_number.errors %}
+                                    <div class="text-danger">{{ form.serial_number.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.display_name.id_for_label }}" class="form-label">Display Name</label>
+                                {{ form.display_name }}
+                                {% if form.display_name.errors %}
+                                    <div class="text-danger">{{ form.display_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.department.id_for_label }}" class="form-label">Department</label>
+                                {{ form.department }}
+                                {% if form.department.errors %}
+                                    <div class="text-danger">{{ form.department.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.model_category.id_for_label }}" class="form-label">Category</label>
+                                {{ form.model_category }}
+                                {% if form.model_category.errors %}
+                                    <div class="text-danger">{{ form.model_category.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger">{{ form.status.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.company.id_for_label }}" class="form-label">Company</label>
+                                {{ form.company }}
+                                {% if form.company.errors %}
+                                    <div class="text-danger">{{ form.company.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if asset %}{% url 'asset_detail' asset.serial_number %}{% else %}{% url 'asset_list' %}{% endif %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Save Asset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-danger text-center" role="alert">
+    <h4 class="alert-heading">Access Denied!</h4>
+    <p>You do not have permission to access this page.</p>
+    <hr>
+    <p class="mb-0">Please contact an administrator if you believe this is an error.</p>
+</div>
+{% endif %}
+{% endblock %}

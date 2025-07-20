@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Asset - Asset Management{% endblock %}
+
+{% block content %}
+{% if user.userprofile.role == 'admin' %} {# Only Admin can access this page #}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                
+                <p>Are you sure you want to delete the following asset?</p>
+                
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6>{{ asset.serial_number }}</h6>
+                        <p class="mb-1"><strong>Name:</strong> {{ asset.display_name }}</p>
+                        <p class="mb-1"><strong>Category:</strong> {{ asset.get_model_category_display }}</p>
+                        <p class="mb-0"><strong>Status:</strong> {{ asset.get_status_display }}</p>
+                    </div>
+                </div>
+                
+                <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'asset_detail' asset.serial_number %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-2"></i>Delete Asset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-danger text-center" role="alert">
+    <h4 class="alert-heading">Access Denied!</h4>
+    <p>You do not have permission to access this page.</p>
+    <hr>
+    <p class="mb-0">Please contact an administrator if you believe this is an error.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ asset.serial_number }} - Asset Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-box me-2"></i>{{ asset.serial_number }}</h2>
+    <div class="d-flex gap-2">
+        {% if user.userprofile.role == 'admin' or user.userprofile.role == 'asset_incharge' %} {# Admin or Incharge can edit #}
+        <a href="{% url 'asset_edit' asset.serial_number %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-2"></i>Edit
+        </a>
+        {% endif %}
+        {% if user.userprofile.role == 'admin' %} {# Only Admin can delete #}
+        <a href="{% url 'asset_delete' asset.serial_number %}" class="btn btn-outline-danger">
+            <i class="bi bi-trash me-2"></i>Delete
+        </a>
+        {% elif user.userprofile.role == 'asset_incharge' %}
+            {% if asset.status == 'available' or asset.status == 'maintenance' %}
+            <a href="{% url 'assign_asset' asset.serial_number %}" class="btn btn-success">
+                <i class="bi bi-person-plus me-2"></i>Assign
+            </a>
+            {% elif asset.status == 'assigned' %}
+            <a href="{% url 'return_asset' asset.serial_number %}" class="btn btn-warning">
+                <i class="bi bi-arrow-return-left me-2"></i>Return
+            </a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Asset Details -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Asset Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">Serial Number:</th>
+                                <td>{{ asset.serial_number }}</td>
+                            </tr>
+                            <tr>
+                                <th>Display Name:</th>
+                                <td>{{ asset.display_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Category:</th>
+                                <td><span class="badge bg-info">{{ asset.get_model_category_display }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Department:</th>
+                                <td>{{ asset.department }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">Status:</th>
+                                <td>
+                                    {% if asset.status == 'available' %}
+                                        <span class="badge bg-success">{{ asset.get_status_display }}</span>
+                                    {% elif asset.status == 'assigned' %}
+                                        <span class="badge bg-primary">{{ asset.get_status_display }}</span>
+                                    {% elif asset.status == 'maintenance' %}
+                                        <span class="badge bg-warning">{{ asset.get_status_display }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ asset.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Company:</th>
+                                <td>{{ asset.company }}</td>
+                            </tr>
+                            <tr>
+                                <th>Assigned To:</th>
+                                <td>
+                                    {% if asset.assigned_user %}
+                                        {{ asset.assigned_user.get_full_name|default:asset.assigned_user.username }}
+                                    {% else %}
+                                        <span class="text-muted">Unassigned</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Last Updated:</th>
+                                <td>{{ asset.updated_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                {% if user.userprofile.role == 'admin' or user.userprofile.role == 'asset_incharge' %} {# Admin or Incharge can edit #}
+                <div class="d-grid gap-2">
+                    <a href="{% url 'asset_edit' asset.serial_number %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-2"></i>Edit Details
+                    </a>
+                    {% if user.userprofile.role == 'admin' %} {# Only Admin can delete #}
+                    <a href="{% url 'asset_delete' asset.serial_number %}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash me-2"></i>Delete Asset
+                    </a>
+                    {% endif %}
+                </div>
+                {% elif user.userprofile.role == 'asset_incharge' %} {# This block is now redundant for edit, but keeps assign/return #}
+                <div class="d-grid gap-2">
+                    {% if asset.status == 'available' or asset.status == 'maintenance' %}
+                    <a href="{% url 'assign_asset' asset.serial_number %}" class="btn btn-success">
+                        <i class="bi bi-person-plus me-2"></i>Assign Asset
+                    </a>
+                    {% elif asset.status == 'assigned' %}
+                    <a href="{% url 'return_asset' asset.serial_number %}" class="btn btn-warning">
+                        <i class="bi bi-arrow-return-left me-2"></i>Return Asset
+                    </a>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-muted">Limited actions available for your role.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assignment History -->
+{% if user.userprofile.role in 'admin,asset_incharge' %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Assignment History</h5>
+            </div>
+            <div class="card-body">
+                {% if assignments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Assigned To</th>
+                                <th>Assigned By</th>
+                                <th>Assigned Date</th>
+                                <th>Returned Date</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in assignments %}
+                            <tr>
+                                <td>{{ assignment.assigned_to.get_full_name|default:assignment.assigned_to.username }}</td>
+                                <td>{{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.username }}</td>
+                                <td>{{ assignment.assigned_date|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    {% if assignment.returned_date %}
+                                        {{ assignment.returned_date|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ assignment.notes|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-clock-history display-4 text-muted"></i>
+                    <p class="text-muted mt-3">No assignment history found.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
