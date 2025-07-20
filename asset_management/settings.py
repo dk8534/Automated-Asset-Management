@@ -60,12 +60,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'asset_management.wsgi.application'
 
 # Database - Force SQLite usage
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
 }
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
